@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iozmarkt - Piyasa Sistemi</title>
+    <!-- Tailwind CSS'i projemize dahil ediyoruz -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Sayfanın arka planı ve temel font ayarları */
+        body {
+            background-color: #111827; /* Koyu gri (bg-gray-900) */
+            color: white;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8 relative">
+
+    <!-- Hata Mesajı Alanı -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+        <div class="bg-red-900 border border-red-700 rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-2xl font-bold text-white mb-4">Hata</h3>
+            <p id="error-message" class="text-red-200 mb-6"></p>
+            <button id="close-error-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-transform duration-200">
+              Anladım
+            </button>
+        </div>
+    </div>
+
+    <!-- Sponsorluk Alanı -->
+    <div class="absolute top-4 left-4 flex flex-col items-center opacity-70">
+        <img src="https://placehold.co/100x50/1F2937/FFFFFF?text=Sponsor" alt="Sponsor Logosu" class="rounded-lg mb-1 border-2 border-gray-700"/>
+        <p class="text-xs font-bold tracking-widest text-gray-500">PTL ELT USL</p>
+    </div>
+
+    <div class="container mx-auto">
+        <header class="text-center mb-10 pt-16 sm:pt-0">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-500">
+                iozmarkt
+            </h1>
+            <p class="text-gray-400 mt-2 text-lg">Otomatik Kayıtlı Piyasa Sistemi</p>
+        </header>
+
+        <!-- Yeni Oyuncu Ekleme Formu -->
+        <div class="bg-gray-800 p-6 rounded-2xl mb-10 shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 text-teal-400">Yeni Oyuncu Ekle</h2>
+            <form id="add-player-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <div class="flex flex-col">
+                    <label class="mb-1 text-sm font-medium text-gray-400">Oyuncu Adı</label>
+                    <input type="text" id="player-name" placeholder="Oyuncu adı girin..." class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 focus:outline-none focus:border-teal-500 transition"/>
+                </div>
+                <div class="flex flex-col">
+                    <label class="mb-1 text-sm font-medium text-gray-400">Mevki</label>
+                    <select id="player-position" class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 focus:outline-none focus:border-teal-500 transition appearance-none">
+                        <option>Oyuncu</option>
+                        <option>Kaleci</option>
+                    </select>
+                </div>
+                <div class="flex flex-col">
+                    <label class="mb-1 text-sm font-medium text-gray-400">Başlangıç Değeri (€)</label>
+                    <input type="number" id="player-baseValue" value="1000000" class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 focus:outline-none focus:border-teal-500 transition"/>
+                </div>
+                <div class="flex flex-col">
+                    <label class="mb-1 text-sm font-medium text-gray-400">Başlangıç OVR</label>
+                    <input type="number" id="player-baseOvr" value="70" class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 focus:outline-none focus:border-teal-500 transition"/>
+                </div>
+                <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-400 focus:ring-opacity-50 h-10 w-full">Ekle</button>
+            </form>
+        </div>
+
+        <!-- Arama ve Sıralama Paneli -->
+        <div class="bg-gray-800 p-4 rounded-2xl mb-8 shadow-lg border border-gray-700 space-y-4">
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="Oyuncu ara..." class="w-full bg-gray-700 border-2 border-gray-600 rounded-lg p-3 pl-10 focus:outline-none focus:border-cyan-500 transition"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <div id="sort-buttons" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <button data-sort="value" class="sort-btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Değer Kralı</button>
+                <button data-sort="goals" class="sort-btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Gol Kralı</button>
+                <button data-sort="assists" class="sort-btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Asist Kralı</button>
+                <button data-sort="cleanSheets" class="sort-btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">CS Kralı</button>
+                <button data-sort="default" class="sort-btn col-span-2 md:col-span-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200">Sıfırla</button>
+            </div>
+        </div>
+
+        <!-- Oyuncu Kartlarının Gösterileceği Alan -->
+        <div id="player-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            <!-- Oyuncu kartları JavaScript ile buraya eklenecek -->
+        </div>
+         <div id="no-players-message" class="hidden text-center py-20">
+            <p class="text-gray-500 text-xl">Henüz oyuncu eklenmedi.</p>
+            <p class="text-gray-600 mt-2">Yukarıdaki formu kullanarak ilk oyuncunuzu ekleyin!</p>
+        </div>
+    </div>
+
+    <!-- Tüm Uygulama Mantığının Olduğu JavaScript Kodu -->
+    <script type="module">
+        // --- DEĞERLER VE SABİTLER ---
+        const VALUE_PER_GOAL = 35000;
+        const VALUE_PER_ASSIST = 25000;
+        const VALUE_PER_CLEAN_SHEET = 65000;
+        const VALUE_FOR_OVR_INCREASE = 30000;
+        const VALUE_PER_BALLON_DOR = 500000;
+        const VALUE_PER_GOLDEN_BOOT = 250000;
+        const VALUE_PER_ASSIST_KING = 200000;
+        const VALUE_PER_GOLDEN_BOY = 100000;
+        const VALUE_PER_CS_KING = 700000;
+        const VALUE_PER_VALUE_KING = 200000;
+
+        // --- UYGULAMA DURUMU (STATE) ---
+        let players = [];
+        let sortType = 'default';
+        let searchQuery = '';
+
+        // --- DOM ELEMENTLERİ ---
+        const playerListElement = document.getElementById('player-list');
+        const addPlayerForm = document.getElementById('add-player-form');
+        const searchInput = document.getElementById('search-input');
+        const sortButtonsContainer = document.getElementById('sort-buttons');
+        const noPlayersMessage = document.getElementById('no-players-message');
+        const errorModal = document.getElementById('error-modal');
+        const errorMessageElement = document.getElementById('error-message');
+        const closeErrorBtn = document.getElementById('close-error-btn');
+
+        // --- TEMEL FONKSİYONLAR ---
+
+        // Hata gösterme fonksiyonu
+        function showError(message) {
+            errorMessageElement.textContent = message;
+            errorModal.classList.remove('hidden');
+        }
+
+        // Değer ve OVR hesaplama
+        function calculateStats(player) {
+            let valueIncrease = 0;
+            valueIncrease += (player.goals || 0) * VALUE_PER_GOAL;
+            valueIncrease += (player.assists || 0) * VALUE_PER_ASSIST;
+            valueIncrease += (player.ballonDorCount || 0) * VALUE_PER_BALLON_DOR;
+            valueIncrease += (player.goldenBootCount || 0) * VALUE_PER_GOLDEN_BOOT;
+            valueIncrease += (player.assistKingCount || 0) * VALUE_PER_ASSIST_KING;
+            valueIncrease += (player.goldenBoyCount || 0) * VALUE_PER_GOLDEN_BOY;
+            valueIncrease += (player.valueKingCount || 0) * VALUE_PER_VALUE_KING;
+
+            if (player.position === 'Kaleci') {
+                valueIncrease += (player.cleanSheets || 0) * VALUE_PER_CLEAN_SHEET;
+                valueIncrease += (player.csKingCount || 0) * VALUE_PER_CS_KING;
+            }
+            
+            const currentValue = player.baseValue + valueIncrease;
+            const ovrIncrease = Math.floor(valueIncrease / VALUE_FOR_OVR_INCREASE);
+            const currentOvr = player.baseOvr + ovrIncrease;
+
+            return { currentValue, currentOvr };
+        }
+
+        // Oyuncu kartlarını ekrana çizme (render) fonksiyonu
+        function renderPlayers() {
+            // Önce mevcut listeyi temizle
+            playerListElement.innerHTML = '';
+
+            // Arama ve sıralama yap
+            let filtered = players;
+            if (searchQuery) {
+                filtered = players.filter(player => player.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+
+            const playersToRender = [...filtered];
+            switch (sortType) {
+                case 'goals': playersToRender.sort((a, b) => (b.goals || 0) - (a.goals || 0)); break;
+                case 'assists': playersToRender.sort((a, b) => (b.assists || 0) - (a.assists || 0)); break;
+                case 'cleanSheets': playersToRender.sort((a, b) => (b.cleanSheets || 0) - (a.cleanSheets || 0)); break;
+                case 'value': playersToRender.sort((a, b) => calculateStats(b).currentValue - calculateStats(a).currentValue); break;
+            }
+
+            // Oyuncu yoksa mesaj göster
+             if (playersToRender.length === 0) {
+                noPlayersMessage.classList.remove('hidden');
+                noPlayersMessage.firstElementChild.textContent = searchQuery ? 'Arama sonucu oyuncu bulunamadı.' : 'Henüz oyuncu eklenmedi.';
+            } else {
+                noPlayersMessage.classList.add('hidden');
+            }
+
+            // Her oyuncu için kart oluştur
+            playersToRender.forEach(player => {
+                const { currentValue, currentOvr } = calculateStats(player);
+                const playerCard = document.createElement('div');
+                playerCard.className = "bg-gradient-to-br from-gray-800 to-gray-800/70 p-5 rounded-2xl shadow-2xl border border-gray-700 flex flex-col transition-all duration-300 hover:border-cyan-500 hover:shadow-cyan-500/20";
+                
+                // Kart içeriğini oluştur
+                playerCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">${player.name}</h3>
+                            <p class="text-teal-400 font-medium">${player.position}</p>
+                        </div>
+                        <div class="text-center bg-gray-900/50 rounded-lg px-4 py-2 border border-gray-600">
+                            <p class="text-3xl font-black text-white">${currentOvr}</p>
+                            <p class="text-xs font-bold text-gray-400 -mt-1">OVR</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/50 my-4 p-4 rounded-lg text-center">
+                        <p class="text-sm text-gray-400">Güncel Piyasa Değeri</p>
+                        <p class="text-3xl font-bold text-cyan-400">${currentValue.toLocaleString('tr-TR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 })}</p>
+                    </div>
+                    <div class="flex-grow space-y-4">
+                        <h4 class="text-lg font-bold text-teal-300 border-b-2 border-teal-500/30 pb-1">İstatistikler</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            ${createStatControlHTML('Gol', player.goals || 0, player.id, 'goals')}
+                            ${createStatControlHTML('Asist', player.assists || 0, player.id, 'assists')}
+                            ${player.position === 'Kaleci' ? createStatControlHTML('Gol Yememe', player.cleanSheets || 0, player.id, 'cleanSheets') : ''}
+                        </div>
+                        <h4 class="text-lg font-bold text-yellow-300 border-b-2 border-yellow-500/30 pb-1 mt-4">Ödüller</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${createStatControlHTML('Değer Kralı', player.valueKingCount || 0, player.id, 'valueKingCount')}
+                            ${createStatControlHTML('Ballon d\'Or', player.ballonDorCount || 0, player.id, 'ballonDorCount')}
+                            ${createStatControlHTML('Altın Ayakkabı', player.goldenBootCount || 0, player.id, 'goldenBootCount')}
+                            ${createStatControlHTML('Asist Kralı', player.assistKingCount || 0, player.id, 'assistKingCount')}
+                            ${createStatControlHTML('Golden Boy', player.goldenBoyCount || 0, player.id, 'goldenBoyCount')}
+                            ${player.position === 'Kaleci' ? createStatControlHTML('CS Kralı', player.csKingCount || 0, player.id, 'csKingCount') : ''}
+                        </div>
+                    </div>
+                    <div class="mt-6 flex">
+                         <button data-delete-id="${player.id}" class="delete-btn w-full bg-red-600/80 hover:bg-red-600 text-white font-bold p-3 rounded-lg transition-transform duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            Oyuncuyu Sil
+                        </button>
+                    </div>
+                `;
+                playerListElement.appendChild(playerCard);
+            });
+
+            updateSortButtons();
+        }
+
+        // İstatistik kontrol butonlarını oluşturan yardımcı fonksiyon
+        function createStatControlHTML(label, value, playerId, stat) {
+            return `
+                <div class="bg-gray-700/50 p-2 rounded-lg text-center">
+                    <p class="text-sm font-semibold text-gray-300 truncate" title="${label}">${label}</p>
+                    <div class="flex items-center justify-center gap-3 mt-1">
+                        <button class="stat-btn text-gray-400 hover:text-white transition" data-player-id="${playerId}" data-stat="${stat}" data-change="-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        </button>
+                        <p class="text-2xl font-bold text-white w-10">${value}</p>
+                        <button class="stat-btn text-gray-400 hover:text-white transition" data-player-id="${playerId}" data-stat="${stat}" data-change="1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Aktif sıralama butonunu güncelle
+        function updateSortButtons() {
+            document.querySelectorAll('.sort-btn').forEach(button => {
+                if (button.dataset.sort === sortType) {
+                    button.className = 'sort-btn font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105 bg-cyan-500 text-gray-900 shadow-lg shadow-cyan-500/30';
+                } else if(button.dataset.sort === 'default'){
+                     button.className = 'sort-btn col-span-2 md:col-span-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200';
+                } else {
+                     button.className = 'sort-btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105';
+                }
+            });
+        }
+        
+        // Verileri localStorage'a kaydetme
+        function saveData() {
+            localStorage.setItem('iozmarkt-players', JSON.stringify(players));
+        }
+
+        // Verileri localStorage'dan yükleme
+        function loadData() {
+            const savedPlayers = localStorage.getItem('iozmarkt-players');
+            if (savedPlayers) {
+                players = JSON.parse(savedPlayers);
+            }
+        }
+
+
+        // --- OLAY DİNLEYİCİLERİ (EVENT LISTENERS) ---
+        
+        // Oyuncu ekleme formu
+        addPlayerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('player-name').value;
+            if (!name.trim()) {
+                showError('Lütfen oyuncu ismini giriniz.');
+                return;
+            }
+             if (players.length >= 300) {
+                showError('En fazla 300 oyuncu ekleyebilirsiniz.');
+                return;
+            }
+
+            const newPlayer = {
+                id: crypto.randomUUID(),
+                name: name,
+                position: document.getElementById('player-position').value,
+                baseValue: parseInt(document.getElementById('player-baseValue').value, 10) || 0,
+                baseOvr: parseInt(document.getElementById('player-baseOvr').value, 10) || 0,
+            };
+            players.unshift(newPlayer); // En başa ekle
+            saveData();
+            renderPlayers();
+            addPlayerForm.reset();
+             // Formdaki default değerleri tekrar ayarla
+            document.getElementById('player-baseValue').value = "1000000";
+            document.getElementById('player-baseOvr').value = "70";
+        });
+
+        // Arama inputu
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderPlayers();
+        });
+
+        // Sıralama butonları
+        sortButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.sort-btn')) {
+                sortType = e.target.dataset.sort;
+                renderPlayers();
+            }
+        });
+
+        // Oyuncu kartları üzerindeki butonlar (silme ve statü)
+        playerListElement.addEventListener('click', (e) => {
+            const statButton = e.target.closest('.stat-btn');
+            const deleteButton = e.target.closest('.delete-btn');
+
+            if (statButton) {
+                const { playerId, stat, change } = statButton.dataset;
+                const playerIndex = players.findIndex(p => p.id === playerId);
+                if (playerIndex > -1) {
+                    players[playerIndex][stat] = Math.max(0, (players[playerIndex][stat] || 0) + parseInt(change));
+                    saveData();
+                    renderPlayers();
+                }
+            }
+
+            if (deleteButton) {
+                const { deleteId } = deleteButton.dataset;
+                players = players.filter(p => p.id !== deleteId);
+                saveData();
+                renderPlayers();
+            }
+        });
+        
+        // Hata penceresini kapatma
+        closeErrorBtn.addEventListener('click', () => {
+            errorModal.classList.add('hidden');
+        });
+
+        // --- UYGULAMA BAŞLANGICI ---
+        loadData();
+        renderPlayers();
+    </script>
+</body>
+</html>
